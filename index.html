@@ -1,0 +1,130 @@
+<html>
+    <head>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.0.3/dist/leaflet.css"
+          integrity="sha512-07I2e+7D8p6he1SIM+1twR5TIrhUQn9+I6yjqD53JQjFiMf8EtC93ty0/5vJTZGF8aAocvHYNEDJajGdNx1IsQ=="
+            crossorigin=""/>
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"/>
+        <link href="/mymap/leaflet-beautify-marker-icon.css" rel="stylesheet"/>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet.photon@0.7.2/leaflet.photon.css"/>
+        <style>
+#map {
+    width: 100%;
+    height: 100%;
+}
+.beautify-marker i {
+        font-size: 18px;
+}
+.legend {
+    line-height: 18px;
+    color: #555;
+    background-color: #fff;
+    padding: 1em;
+}
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.7;
+}
+        </style>
+        <script src="https://unpkg.com/leaflet@1.0.3/dist/leaflet.js"
+  integrity="sha512-A7vV8IFfih/D732iSSKi20u/ooOfj/AGehOKq0f4vLT1Zr2Y+RX7C+w8A1gaSasGtRUZpF/NZgzSAu4/Gc41Lg=="
+    crossorigin=""></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/2.0.3/fetch.min.js" crossorigin=""></script>
+        <script src="/mymap/leaflet-beautify-marker-icon.js"></script>
+        <script src="https://unpkg.com/leaflet.photon@0.7.2/leaflet.photon.js"></script>
+        <script src="https://unpkg.com/leaflet-hash@0.2.1/leaflet-hash.js"></script>
+    </head>
+    <body>
+        <div id="map"></div>
+        <script>
+            var queryDict = {}
+            location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]})
+            var taxi_api_key = 'e7c43127-e8ea-4fd5-bb7c-79a883e3a916'
+            if (queryDict.api_key)
+                taxi_api_key = queryDict.api_key
+            var legend_div = null;
+            var DEFAULT_ZOOM = 6;
+            var API_URL = 'https://api-adresse.data.gouv.fr';
+            var SHORT_CITY_NAMES = ['y', 'ay', 'bu', 'by', 'eu', 'fa', 'gy', 'oo', 'oz', 'py', 'ri', 'ry', 'sy', 'ur', 'us', 'uz'];
+            var formatResult = function (feature, el) {
+                var title = L.DomUtil.create('strong', '', el),
+                    detailsContainer = L.DomUtil.create('small', '', el),
+                    details = [];
+                title.innerHTML = feature.properties.label || feature.properties.name;
+                var types = {
+                    housenumber: 'numéro',
+                    street: 'rue',
+                    locality: 'lieu-dit',
+                    hamlet: 'hameau',
+                    village: 'village',
+                    city: 'ville',
+                    commune: 'commune'
+                };
+                if (types[feature.properties.type]) L.DomUtil.create('span', 'type', title).innerHTML = types[feature.properties.type];
+                if (feature.properties.city && feature.properties.city !== feature.properties.name) {
+                    details.push(feature.properties.city);
+                }
+                if (feature.properties.context) details.push(feature.properties.context);
+                detailsContainer.innerHTML = details.join(', ');
+            };
+
+            var photonControlOptions = {
+               placeholder: 'Ex. 6 quai de la tourelle cergy…',
+               position: 'topright',
+               url: API_URL + '/search/?',
+               formatResult: formatResult,
+               noResultLabel: 'Aucun résultat',
+               feedbackLabel: 'Signaler',
+               feedbackEmail: 'adresses@data.gouv.fr',
+               minChar: function (val) {
+                   return SHORT_CITY_NAMES.indexOf(val) !== -1 || val.length >= 3;
+               },
+               submitDelay: 200,
+               onSelected: function(feature) {
+                   mymap.setView([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], 12);
+               }
+            };
+            var mymap = L.map('map', {
+                 photonControl: true,
+                 photonControlOptions: photonControlOptions,
+                 photonReverseControl: true,
+                 attributionControl: false
+            });
+             mymap.setView([48.86, 2.35], DEFAULT_ZOOM);
+
+            L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+                    maxZoom: 18,
+                            attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+                            '<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+                            'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+                            id: 'mapbox.streets'
+            }).addTo(mymap);
+fetch("stats.json")
+        .then(response => { return response.json() })
+        .then(response => {
+            const geoJSON = L.geoJSON(response, {
+                style: {
+            weight: 1,
+            color: 'green',
+            fillOpacity: 0.5
+                }
+            })
+            mymap.addLayer(geoJSON)
+        })
+
+
+var legend = L.control({position: 'bottomright'});
+
+legend.onAdd = function (map) {
+
+    legend_div = L.DomUtil.create('div', 'info legend');
+    return legend_div;
+};
+
+legend.addTo(mymap);
+mymap.addHash();
+        </script>
+    </body>
+</html>
