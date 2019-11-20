@@ -86,6 +86,12 @@
                    mymap.setView([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], 12);
                }
             };
+function onEachAomFeature (feature, layer) {
+        const name = feature.properties.nom
+        const type = feature.properties.forme_juridique
+        layer.bindPopup(`<strong>${name}</strong><br/>${type}<br/>`)
+}
+
             var mymap = L.map('map', {
                  photonControl: true,
                  photonControlOptions: photonControlOptions,
@@ -105,10 +111,11 @@ fetch("stats.json")
         .then(response => { return response.json() })
         .then(response => {
             const geoJSON = L.geoJSON(response, {
+                onEachFeature: onEachAomFeature,
                 style: {
-            weight: 1,
-            color: 'green',
-            fillOpacity: 0.5
+                weight: 1,
+                color: 'green',
+                fillOpacity: 0.5
                 }
             })
             mymap.addLayer(geoJSON)
