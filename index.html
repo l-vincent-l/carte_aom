@@ -107,6 +107,18 @@ function onEachAomFeature (feature, layer) {
                             'Imagery © <a href="http://mapbox.com">Mapbox</a>',
                             id: 'mapbox.streets'
             }).addTo(mymap);
+fetch("regions.json")
+    .then(response => { return response.json()})
+    .then(response =>  {
+            const geoJSON = L.geoJSON(response, {
+                style: {
+                weight: 1,
+                color: 'blue',
+                fillOpacity: 0.3
+                }
+            })
+            mymap.addLayer(geoJSON)
+    })
 fetch("stats.json")
         .then(response => { return response.json() })
         .then(response => {
